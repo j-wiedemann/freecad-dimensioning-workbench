@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+
+    <!-- For information about the contents of this file see
+    https://freecad.github.io/Addon-Academy/Topics/Structuring/Manifest/ -->
+
+    <!--[ Info ]-->
+
+    <name>Dimensioning</name>
+    <description>Add dimensions directly in the 3D scene.</description>
+    <version>0.1.0</version>
+    <date>2026-08-26</date>
+
+    <!--[ Ecosystem Requirements ]-->
+
+    <!--NOTE: Examples only, this Template does *not* actually require these versions -->
+    <freecadmin>1.1.1</freecadmin>
+    <pythonmin>3.10</pythonmin>
+
+    <!--[ Dependencies ]-->
+
+    <!--NOTE: Examples only, this Template does *not* actually require these -->
+    <!--
+    <depend type="python">numpy</depend>
+    <depend type="addon">Curves</depend>
+    <depend type="internal">draft</depend>
+    -->
+
+    <!--[ Tags ]-->
+    <!--
+    <tag>Template</tag>
+    <tag>Minimal</tag>
+    <tag>Example</tag>
+    -->
+
+    <!--[ Maintainers ]-->
+
+    <maintainer email="contact@freecad-france.com">Jonathan Wiedemann</maintainer>
+
+    <!--[ Authors ]-->
+
+    <author>Jonathan Wiedemann</author>
+    <!-- <author>Yet another author's name here</author> -->
+
+    <!--[ Licenses ]-->
+
+    <license file="LICENSE-Code">LGPL-2.1-or-later</license>
+    <license file="LICENSE-Assets">CC-BY-SA-4.0</license>
+
+    <!--[ Icon ]-->
+
+    <icon>freecad/dimensioning_workbench/resources/icons/dimensioning-wb.svg</icon>
+
+    <!--[ Urls ]-->
+
+    <url type="repository" branch="main">https://github.com/j-wiedemann/dimensioning-workbench</url>
+    <url type="documentation">https://github.com/j-wiedemann/dimensioning-workbench/tree/main/freecad/dimensioning_workbench/resources/docs/</url>
+    <url type="bugtracker">https://github.com/j-wiedemann/dimensioning-workbench/issues/</url>
+    <url type="readme">https://github.com/j-wiedemann/dimensioning-workbench/refs/heads/main/freecad/dimensioning_workbench/resources/docs/Overview.md</url>
+
+    <!--[ Content ]-->
+
+    <content>
+        <other/>
+
+        <!-- Example stuff -->
+        <workbench>
+            <name>Dimensioning</name>
+            <classname>DimensioningWorkbench</classname>
+            <description>Example workbench</description>
+            <subdirectory>./</subdirectory>
+            <icon>freecad/dimensioning_workbench/resources/icons/dimensioning-wb-wb.svg</icon>
+        </workbench>
+
+    </content>
+
+</package>

@@ -1,0 +1,50 @@
+# References:
+# https://packaging.python.org/en/latest/specifications/declaring-project-metadata/
+# https://packaging.python.org/en/latest/guides/packaging-namespace-packages/#native-namespace-packages
+# https://packaging.python.org/en/latest/guides/single-sourcing-package-version/
+# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "freecad-dimensioning_workbench"
+dynamic = ["version"]
+description = "Add dimensions directly in the 3D scene."
+readme = "README.md"
+license = "LGPL-2.1-or-later"
+license-files = [
+    "LICENSE-Code",
+    "LICENSE-Assets"
+]
+maintainers = [
+    {name = "Jonathan Wiedemann", email = "contact@freecad-france.com"},
+]
+requires-python = ">=3.10"
+
+
+[dependency-groups]
+dev = [
+    "PySide6",
+    "ruff",
+    "codespell",
+    "freecad-stubs",
+]
+
+[project.urls]
+source = "https://github.com/j-wiedemann/dimensioning-workbench"
+
+[tool.hatch.version]
+path = "freecad/dimensioning_workbench/version.py"
+# Hatchling looks for __version__ = "..." by default
+
+[tool.hatch.build.targets.wheel]
+packages = ["freecad"]
+
+[tool.ty.rules]
+unresolved-import = "ignore"
+unresolved-attribute = "ignore"
+no-matching-overload = "ignore"
+invalid-assignment = "ignore"
+invalid-argument-type = "ignore"

@@ -1,0 +1,16 @@
+[project]
+authors = ["Jonathan Wiedemann <contact@freecad-france.com>"]
+channels = ["freecad/label/dev", "conda-forge"]
+description = "Add dimensions directly in the 3D scene."
+name = "freecad.dimensioning_workbench"
+platforms = ["osx-arm64", "linux-aarch64", "linux-64", "win-64", "osx-64"]
+version = "0.1.0"
+
+[pypi-dependencies]
+freecad-dimensioning_workbench = { path = ".", editable = true }
+
+[tasks]
+test = "python tests/tests.py"
+
+[dependencies]
+freecad = ">=1.0.0,<2"
