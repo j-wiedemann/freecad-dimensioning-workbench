@@ -998,6 +998,12 @@ class DimensionFPO:
         Processes ReferencePointsList and ReferenceShapesList to collect all
         vertices, edges, and faces, returning reference objects with counters.
         
+        Sub-shapes are resolved in global coordinates: when a referenced
+        object lives inside a container with a placement (e.g. App::Part, or
+        nested App::Part containers), the ancestor placement chain is applied
+        via getGlobalPlacement() so the dimension is built at the geometry's
+        actual position in the document.
+
         Args:
             fpo: Feature Python Object, the freecad dimension object
             
@@ -1020,8 +1026,22 @@ class DimensionFPO:
                     body = obj
                 else:
                     body = obj.getParent()
+                body_to_global = None
+                if hasattr(body, "getGlobalPlacement") and body.getGlobalPlacement() != body.Placement:
+                    body_to_global = body.getGlobalPlacement().Matrix
                 for sub_name in sub_names:
-                    sub_shape = Part.getShape(body, obj.Name + '.' + sub_name, needSubElement=True)
+                    if body_to_global is not None:
+                        sub_shape = Part.getShape(
+                            body,
+                            obj.Name + '.' + sub_name,
+                            needSubElement=True,
+                            mat=body_to_global,
+                            transform=False,
+                        )
+                    else:
+                        sub_shape = Part.getShape(body, obj.Name + '.' + sub_name, needSubElement=True)
+                    if sub_shape is None:
+                        continue
                     if sub_shape.ShapeType == 'Face':
                         face_counter += 1
                         references.append(sub_shape)
@@ -1032,8 +1052,16 @@ class DimensionFPO:
                         vector_counter += 1
                         references.append(sub_shape.Point)
             else:
+                obj_to_global = None
+                if hasattr(obj, "getGlobalPlacement") and obj.getGlobalPlacement() != obj.Placement:
+                    obj_to_global = obj.getGlobalPlacement().multiply(obj.Placement.inverse()).Matrix
                 for sub_name in sub_names:
-                    sub_shape = obj.getSubObject(sub_name)
+                    if obj_to_global is not None:
+                        sub_shape = obj.getSubObject(sub_name, matrix=obj_to_global)
+                    else:
+                        sub_shape = obj.getSubObject(sub_name)
+                    if sub_shape is None:
+                        continue
                     if sub_shape.ShapeType == 'Face':
                         face_counter += 1
                         references.append(sub_shape)
