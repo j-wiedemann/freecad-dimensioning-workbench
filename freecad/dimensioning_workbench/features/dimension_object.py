@@ -133,6 +133,12 @@ class DimensionFPO:
             vec_proj = vec_prime.projectToPlane(V(0,0,0), V(0,1,0))
             if [p1.z, p2.z].index(min(p1.z, p2.z)) == 1:
                 p1,p2 = V(p2),V(p1)
+        else:
+            App.Console.PrintWarning("Dimension[Length]:    mode '{}' not handled.\n".format(fpo.Mode))
+            fpo.Shape = Part.Shape()
+            fpo.Placement = App.Placement()
+            fpo.recompute()
+            return
         length = vec_proj.Length
 
         # make the dim text
@@ -282,20 +288,9 @@ class DimensionFPO:
             else:
                 ext_line2 = Part.makeLine(pe1, pe2)
                 ext_line1 = Part.makeLine(pc1, pc2)
-        elif fpo.Mode == "Y":
-            if fpo.Offset.Value >= 0:
-                ext_line2 = Part.makeLine(pe1, pe2)
-                ext_line1 = Part.makeLine(pc1, pc2)
-            else:
-                ext_line2 = Part.makeLine(pe1, pe2)
-                ext_line1 = Part.makeLine(pc1, pc2)
-        elif fpo.Mode == "Z":
-            if fpo.Offset.Value >= 0:
-                ext_line2 = Part.makeLine(pe1, pe2)
-                ext_line1 = Part.makeLine(pc1, pc2)
-            else:
-                ext_line2 = Part.makeLine(pe1, pe2)
-                ext_line1 = Part.makeLine(pc1, pc2)
+        else:
+            ext_line2 = Part.makeLine(pe1, pe2)
+            ext_line1 = Part.makeLine(pc1, pc2)
         
         # make dimension shape compound
         dim_shape = Part.makeCompound(
@@ -341,6 +336,12 @@ class DimensionFPO:
         elif references_data['edge_counter'] == 1:
             og_p1 = references[0].Vertexes[0].Point
             og_p2 = references[0].Vertexes[1].Point
+        else:
+            App.Console.PrintWarning("Dimension[Distance]:    references provided are incoherent or not handle.\n")
+            fpo.Shape = Part.Shape()
+            fpo.Placement = App.Placement()
+            fpo.recompute()
+            return
         main_dir = self.get_main_direction(og_p2.sub(og_p1))
         if (main_dir == "X" and og_p1.x > og_p2.x) or \
         (main_dir == "Y" and og_p1.y < og_p2.y) or \
@@ -505,6 +506,12 @@ class DimensionFPO:
         elif fpo.Mode == "Diameter":
             dim_prefix = "Ø"
             dim_value = value*2
+        else:
+            App.Console.PrintWarning("Dimension[Circular]:    mode '{}' not handled.\n".format(fpo.Mode))
+            fpo.Shape = Part.Shape()
+            fpo.Placement = App.Placement()
+            fpo.recompute()
+            return
         dim_text_shape = self.make_dim_text_shape(fpo, dim_value, prefix=dim_prefix)
         bb = dim_text_shape.BoundBox
         if 90 < fpo.Angle < 270:
@@ -647,7 +654,12 @@ class DimensionFPO:
             if -180 < angle < 0:
                 vec_for_pl = vec_a
                 angle = abs(angle)
-
+        else:
+            App.Console.PrintWarning("Dimension[Angular]:    sector '{}' not handled.\n".format(fpo.Sector))
+            fpo.Shape = Part.Shape()
+            fpo.Placement = App.Placement()
+            fpo.recompute()
+            return
         arc = Part.makeCircle(abs(fpo.Offset.Value), V(0,0,0), V(0,0,1), 0.0, angle)
         
         p1 = V(abs(fpo.Offset.Value-10), 0, 0)
@@ -900,7 +912,7 @@ class DimensionFPO:
         elif main_dir_axis == "Y":
             vx = V(1, 0, 0)
             vz = V(0, -1, 0)
-        elif main_dir_axis == "Z":
+        else:
             vx = V(1, 0, 0)
             vz = V(0, 0, 1)
 
@@ -1169,7 +1181,7 @@ class DimensionFPO:
         obj = doc.addObject("Part::FeaturePython", name or "Dimension_000")
 
         # Bind the Python Proxy
-        proxy = cls(obj)
+        cls(obj)
 
         # Manage Gui (ViewProvider) if available
         if App.GuiUp and hasattr(obj, "ViewObject"):
