@@ -7,185 +7,291 @@
     <x>0</x>
     <y>0</y>
     <width>301</width>
-    <height>527</height>
+    <height>700</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Dimension</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="outerLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>References</string>
+    <widget class="QScrollArea" name="scroll_area">
+     <property name="frameShape">
+      <enum>QFrame::Shape::NoFrame</enum>
      </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <widget class="QPushButton" name="add_shape">
-       <property name="toolTip">
-        <string>Add the currently selected shapes to references.</string>
-       </property>
-       <property name="text">
-        <string>Add Shape</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="add_point">
-       <property name="toolTip">
-        <string>Activate the snapper tool to get a point.</string>
-       </property>
-       <property name="text">
-        <string>Add Point</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QListWidget" name="references">
-     <property name="selectionMode">
-      <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
+     <property name="widgetResizable">
+      <bool>true</bool>
      </property>
-    </widget>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item>
-      <widget class="QPushButton" name="remove_reference">
-       <property name="toolTip">
-        <string>remove selected reference from the list above.</string>
-       </property>
-       <property name="text">
-        <string>Remove Reference</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QFormLayout" name="formLayout">
-     <item row="0" column="0">
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Mode</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1">
-      <widget class="QComboBox" name="modes"/>
-     </item>
-     <item row="5" column="0">
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Text offset</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1">
-      <widget class="Gui::InputField" name="text_offset"/>
-     </item>
-     <item row="4" column="0">
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>Sector</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="1">
-      <widget class="QComboBox" name="sector">
+     <widget class="QWidget" name="scroll_contents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>301</width>
+        <height>700</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <property name="text">
-         <string>1</string>
-        </property>
+        <widget class="QPushButton" name="create_dimension">
+         <property name="toolTip">
+          <string>Validate this dimension and start a new one.</string>
+         </property>
+         <property name="text">
+          <string>Create</string>
+         </property>
+        </widget>
        </item>
        <item>
-        <property name="text">
-         <string>2</string>
-        </property>
+        <widget class="QLabel" name="label_4">
+         <property name="text">
+          <string>References</string>
+         </property>
+        </widget>
        </item>
        <item>
-        <property name="text">
-         <string>3</string>
-        </property>
+        <widget class="QListWidget" name="references">
+         <property name="selectionMode">
+          <enum>QAbstractItemView::SelectionMode::MultiSelection</enum>
+         </property>
+        </widget>
        </item>
        <item>
-        <property name="text">
-         <string>4</string>
-        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="add_shape">
+           <property name="toolTip">
+            <string>Toggle picking mode: click elements in the 3D view to add them as references. Click again to go back to point picking.</string>
+           </property>
+           <property name="text">
+            <string>Add Shape</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="remove_reference">
+           <property name="toolTip">
+            <string>remove selected reference from the list above.</string>
+           </property>
+           <property name="text">
+            <string>Remove Reference</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
-      </widget>
-     </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="label_7">
-       <property name="text">
-        <string>Angle</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="Gui::InputField" name="angle"/>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="label_2">
-       <property name="text">
-        <string>Proj</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QComboBox" name="projections"/>
-     </item>
-     <item row="2" column="0">
-      <widget class="QLabel" name="label_3">
-       <property name="text">
-        <string>Offset</string>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="1">
-      <widget class="Gui::InputField" name="offset"/>
-     </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_8">
-       <property name="text">
-        <string>Text Size</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_9">
-       <property name="text">
-        <string>Arrow Size</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="1">
-      <widget class="Gui::InputField" name="text_size"/>
-     </item>
-     <item row="7" column="1">
-      <widget class="Gui::InputField" name="arrow_size"/>
-     </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label_10">
-       <property name="text">
-        <string>Ext line offset</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="1">
-      <widget class="Gui::InputField" name="ext_line_offset"/>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <widget class="QPushButton" name="create_dimension">
-     <property name="text">
-      <string>Create</string>
-     </property>
+       <item>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="0" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Mode</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QComboBox" name="modes"/>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Text offset</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="Gui::InputField" name="text_offset"/>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_6">
+           <property name="text">
+            <string>Sector</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QComboBox" name="sector">
+           <item>
+            <property name="text">
+             <string>1</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>2</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>3</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>4</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Angle</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1">
+          <widget class="Gui::InputField" name="angle"/>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="label_2">
+           <property name="text">
+            <string>Proj</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QComboBox" name="projections"/>
+         </item>
+         <item row="2" column="0">
+          <widget class="QLabel" name="label_3">
+           <property name="text">
+            <string>Offset</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="Gui::InputField" name="offset"/>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Text Size</string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="label_9">
+           <property name="text">
+            <string>Arrow Size</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="Gui::InputField" name="text_size"/>
+         </item>
+         <item row="7" column="1">
+          <widget class="Gui::InputField" name="arrow_size"/>
+         </item>
+         <item row="8" column="0">
+          <widget class="QLabel" name="label_10">
+           <property name="text">
+            <string>Ext line offset</string>
+           </property>
+          </widget>
+         </item>
+         <item row="8" column="1">
+          <widget class="Gui::InputField" name="ext_line_offset"/>
+         </item>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>Decimals</string>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1">
+          <widget class="QSpinBox" name="decimals">
+           <property name="toolTip">
+            <string>Number of decimals shown in the dimension value (0 = integer).</string>
+           </property>
+           <property name="minimum">
+            <number>0</number>
+           </property>
+           <property name="maximum">
+            <number>6</number>
+           </property>
+           <property name="value">
+            <number>2</number>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="0">
+          <widget class="QLabel" name="label_12">
+           <property name="text">
+            <string>Prefix</string>
+           </property>
+          </widget>
+         </item>
+         <item row="10" column="1">
+          <widget class="QLineEdit" name="prefix">
+           <property name="toolTip">
+            <string>Text prepended before the automatic symbol and value.</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="0">
+          <widget class="QLabel" name="label_13">
+           <property name="text">
+            <string>Suffix</string>
+           </property>
+          </widget>
+         </item>
+         <item row="11" column="1">
+          <widget class="QLineEdit" name="suffix">
+           <property name="toolTip">
+            <string>Text appended after the value.</string>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="0">
+          <widget class="QLabel" name="label_14">
+           <property name="text">
+            <string>Override</string>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="1">
+          <widget class="QPlainTextEdit" name="override">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>48</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>64</height>
+            </size>
+           </property>
+           <property name="toolTip">
+            <string>Replaces the measured value when non-empty. Press Enter for a new line.</string>
+           </property>
+           <property name="placeholderText">
+            <string>Empty = measured value</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
   </layout>

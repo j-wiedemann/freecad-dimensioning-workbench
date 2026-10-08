@@ -15,6 +15,14 @@ import DraftGeomUtils
 import DraftVecUtils
 
 
+def format_dim_value(value: float, decimals: int) -> str:
+    """Format a dimension value: round to decimals and strip trailing zeros."""
+    text = f"{value:.{decimals}f}"
+    if decimals > 0:
+        text = text.rstrip("0").rstrip(".")
+    return text
+
+
 class DimensionFPO:
     """Dimension feature python object"""
     def __init__(self, fpo: App.DocumentObject) -> None:
@@ -66,11 +74,24 @@ class DimensionFPO:
             fpo.addProperty("App::PropertyLength", "TextSize", "Dimension", "Size of the text.").TextSize = 10.0
         if "ExtLineOffset" not in pl:
             fpo.addProperty("App::PropertyDistance", "ExtLineOffset", "Dimension", "Offset of the ext line from references.").ExtLineOffset = 5.0
-    
+        if "Prefix" not in pl:
+            fpo.addProperty("App::PropertyString", "Prefix", "Dimension", "Text prepended before the automatic symbol and value.").Prefix = ""
+        if "Suffix" not in pl:
+            fpo.addProperty("App::PropertyString", "Suffix", "Dimension", "Text appended after the value.").Suffix = ""
+        if "Override" not in pl:
+            fpo.addProperty("App::PropertyString", "Override", "Dimension", "Replaces the measured value when non-empty; supports newlines.").Override = ""
+        if "Decimals" not in pl:
+            fpo.addProperty("App::PropertyIntegerConstraint", "Decimals", "Dimension", "Number of decimals shown in the dimension value.")
+            fpo.Decimals = (2, 0, 6, 1)
+
     def onChanged(self, fpo: App.DocumentObject, prop: str) -> None:
         '''Do something when a property has changed'''
         # App.Console.PrintMessage("DimensionsFPO:    Change property: " + str(prop) + "\n")
         return
+
+    def onDocumentRestored(self, fpo: App.DocumentObject) -> None:
+        '''Ensure new properties exist when restoring documents created earlier'''
+        self.setProperties(fpo)
 
     def execute(self, fpo: App.DocumentObject) -> None:
         '''Do something when doing a recomputation, this method is mandatory'''
@@ -1118,17 +1139,16 @@ class DimensionFPO:
         arrow = Part.makePolygon([p1, p2, p3, p1])
         return arrow
     
-    def make_dim_text_shape(self, fpo, value, prefix=None, suffix=None, unit=None, tol_sup=None, tol_inf=None):
-        dim_text = ''
-        if prefix:
-            dim_text += prefix
-        dim_text += format(value, 'g')
-        if unit:
-            dim_text += '{}'.format(unit)
-        if suffix:
-            dim_text += suffix
+    def make_wire_string_shape(self, fpo, string):
+        """Render a single text line as a Part compound shape.
+
+        Returns None for an empty string so blank lines still advance
+        the line stack in make_dim_text_shape.
+        """
+        if not string:
+            return None
         wire_string_dim_text = Part.makeWireString(
-            dim_text,
+            string,
             Resources.font(''),
             "/ReliefSingleLineCAD-Regular.ttf",
             fpo.TextSize,
@@ -1142,8 +1162,45 @@ class DimensionFPO:
                 pile.extend(element[::-1])
             else:
                 dim_text_wires.append(element)
-        dim_text_shape = Part.makeCompound([s.removeShape(s.Edges[-1]) for s in dim_text_wires])
-        return dim_text_shape
+        return Part.makeCompound([s.removeShape(s.Edges[-1]) for s in dim_text_wires])
+
+    def make_dim_text_lines(self, fpo, value, prefix=None, suffix=None, unit=None, tol_sup=None, tol_inf=None):
+        """Compose the final dimension text and return its lines.
+
+        Final text is: Prefix + automatic symbol (R/Ø for circular modes)
+        + (Override if non-empty, else the rounded value and its unit)
+        + Suffix. Newlines split the text into stacked lines.
+        """
+        if getattr(fpo, "Override", ""):
+            core = fpo.Override
+        else:
+            core = format_dim_value(value, getattr(fpo, "Decimals", 2))
+            if unit:
+                core += "{}".format(unit)
+        text = "{}{}{}{}".format(
+            getattr(fpo, "Prefix", "") or "",
+            prefix or "",
+            core,
+            getattr(fpo, "Suffix", "") or "",
+            )
+        return text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+
+    def make_dim_text_shape(self, fpo, value, prefix=None, suffix=None, unit=None, tol_sup=None, tol_inf=None):
+        line_height = fpo.TextSize.Value * 1.5
+        lines = self.make_dim_text_lines(fpo, value, prefix=prefix, suffix=suffix, unit=unit, tol_sup=tol_sup, tol_inf=tol_inf)
+        shapes = []
+        offset = 0.0
+        for line in lines:
+            shape = self.make_wire_string_shape(fpo, line)
+            if shape is not None:
+                shape.translate(V(0, offset, 0))
+                shapes.append(shape)
+            offset -= line_height
+        if not shapes:
+            return Part.Shape()
+        if len(shapes) == 1:
+            return shapes[0]
+        return Part.makeCompound(shapes)
     
     def get_main_direction(self, obj:App.Vector|Part.Edge) -> str:
         if isinstance(obj, Part.Edge):

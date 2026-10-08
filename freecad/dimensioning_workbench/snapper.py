@@ -14,20 +14,26 @@ import draftguitools.gui_trackers as trackers
 
 
 class getPoint:
-    def __init__(self, last=None, callback=None, movecallback=None, mode="line") -> None:
+    def __init__(self, last=None, callback=None, movecallback=None, mode="line", continuous=False) -> None:
         if not last:
             mode = "point"
         print("Snapper:    init snap with {} mode".format(mode.upper()))
         self.last = last
         self.mode = mode
+        self.continuous = continuous
         self.callback = callback
         self.movecallback = movecallback
         self.view = Draft.get3DView()
         self.pt = None
-        self.callbackClick = self.view.addEventCallbackPivy(coin.SoMouseButtonEvent.getClassTypeId(), self.click)
-        self.callbackMove = self.view.addEventCallbackPivy(coin.SoLocation2Event.getClassTypeId(), self.move)
         self.linetrack = None
         self.rectangletrack = None
+        if self.view is None:
+            self.callbackClick = None
+            self.callbackMove = None
+            print("Snapper:    no 3D view available")
+            return
+        self.callbackClick = self.view.addEventCallbackPivy(coin.SoMouseButtonEvent.getClassTypeId(), self.click)
+        self.callbackMove = self.view.addEventCallbackPivy(coin.SoLocation2Event.getClassTypeId(), self.move)
         if self.last and self.mode == "line":
             self.linetrack = trackers.lineTracker()
             self.linetrack.on()
@@ -42,6 +48,9 @@ class getPoint:
         if self.callback:
             self.callback(self.pt)
         self.pt = None
+        if self.continuous:
+            # stay armed for the next click
+            return
         self.finalize()
         print("Snapper:    finalize snapper on ACCEPT")
         
@@ -89,6 +98,55 @@ class getPoint:
             self.rectangletrack.p3(self.pt)
         if self.movecallback:
             self.movecallback(self.pt)
+
+
+class getSelection:
+    """Live click observer for shape picking.
+
+    On every left click in the 3D view the callback is called with the topmost
+    object info dict under the cursor (same info FreeCAD selection uses), or
+    None when nothing lies under the cursor. The callback must expect a single
+    argument.
+    """
+
+    def __init__(self, callback=None) -> None:
+        print("Snapper:    init live shape picking")
+        self.callback = callback
+        self.view = Draft.get3DView()
+        self.callbackClick = None
+        if self.view is None:
+            print("Snapper:    no 3D view available")
+            return
+        self.callbackClick = self.view.addEventCallbackPivy(
+            coin.SoMouseButtonEvent.getClassTypeId(), self.click)
+
+    def click(self, event_cb) -> None:
+        event = event_cb.getEvent()
+        if event.getButton() == 1 and event.getState() == coin.SoMouseButtonEvent.DOWN:
+            pos = event.getPosition()
+            if hasattr(pos, "getValue"):
+                pos = tuple(pos.getValue())
+            infos = self.view.getObjectsInfo(pos)
+            info = infos[0] if infos else None
+            if self.callback:
+                self.callback(info)
+
+    def cancel(self) -> None:
+        self.finalize()
+        print("Snapper:    finalize shape picker on CANCEL")
+
+    def finalize(self) -> None:
+        try:
+            if self.callbackClick:
+                self.view.removeEventCallbackPivy(
+                    coin.SoMouseButtonEvent.getClassTypeId(), self.callbackClick)
+                # Next line fixes https://github.com/FreeCAD/FreeCAD/issues/10469:
+                gui_utils.end_all_events()
+        except RuntimeError:
+            # the view has been deleted already
+            print("Snapper:    Error when trying to remove Pivy Callbacks")
+            pass
+        self.callbackClick = None
 
 
 class Snapper:
