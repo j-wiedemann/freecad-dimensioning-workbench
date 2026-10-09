@@ -281,10 +281,10 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>Replaces the measured value when non-empty. Press Enter for a new line.</string>
+            <string>Replaces the measured value when non-empty. Press Enter for a new line. $dim inserts the rounded measured value.</string>
            </property>
            <property name="placeholderText">
-            <string>Empty = measured value</string>
+            <string>Empty = measured value, $dim = value</string>
            </property>
           </widget>
          </item>

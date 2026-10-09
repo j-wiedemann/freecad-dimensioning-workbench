@@ -7,6 +7,7 @@ Dimension Feature Python Object
 from __future__ import annotations
 from ..resources import Resources
 import math
+import re
 
 import FreeCAD as App
 from FreeCAD import Vector as V
@@ -79,7 +80,7 @@ class DimensionFPO:
         if "Suffix" not in pl:
             fpo.addProperty("App::PropertyString", "Suffix", "Dimension", "Text appended after the value.").Suffix = ""
         if "Override" not in pl:
-            fpo.addProperty("App::PropertyString", "Override", "Dimension", "Replaces the measured value when non-empty; supports newlines.").Override = ""
+            fpo.addProperty("App::PropertyString", "Override", "Dimension", "Replaces the measured value when non-empty; supports newlines and '$dim' to insert the rounded measured value.").Override = ""
         if "Decimals" not in pl:
             fpo.addProperty("App::PropertyIntegerConstraint", "Decimals", "Dimension", "Number of decimals shown in the dimension value.")
             fpo.Decimals = (2, 0, 6, 1)
@@ -1169,10 +1170,15 @@ class DimensionFPO:
 
         Final text is: Prefix + automatic symbol (R/Ø for circular modes)
         + (Override if non-empty, else the rounded value and its unit)
-        + Suffix. Newlines split the text into stacked lines.
+        + Suffix. In the Override text, "$dim" (case-insensitive) is
+        replaced by the rounded measured value and its unit.
+        Newlines split the text into stacked lines.
         """
         if getattr(fpo, "Override", ""):
-            core = fpo.Override
+            dim_value = format_dim_value(value, getattr(fpo, "Decimals", 2))
+            if unit:
+                dim_value += "{}".format(unit)
+            core = re.sub(r"\$dim", dim_value, fpo.Override, flags=re.IGNORECASE)
         else:
             core = format_dim_value(value, getattr(fpo, "Decimals", 2))
             if unit:
