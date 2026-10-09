@@ -10,6 +10,7 @@ from __future__ import annotations
 from ..resources import Resources
 from .. import utils
 from .. import snapper
+from .reference_highlight import ReferenceHighlighter
 
 import FreeCAD as App
 import FreeCADGui as Gui
@@ -23,6 +24,7 @@ translate = App.Qt.translate
 
 class DimensionTaskPanel:
     def __init__(self, fpo=None) -> None:
+        self.highlighter = None
         if not App.ActiveDocument:
             return
 
@@ -148,7 +150,7 @@ class DimensionTaskPanel:
                     item.setData(QtCore.Qt.UserRole, item_data)
                     print("Dimension:    add reference {}".format(item_text))
                     self.form.references.addItem(item)
-            # get potentiel best mode
+            # get potential best mode
             if linear_edges_count == 1:
                 vec = DraftGeomUtils.vec(references[0])
                 mode = utils.get_main_direction(vec or App.Vector(1,0,0))
@@ -201,27 +203,39 @@ class DimensionTaskPanel:
         self.form.remove_reference.clicked.connect(self.remove_reference)
         self.form.create_dimension.clicked.connect(self.create_dimension)
 
+        # highlight the reference hovered in the list in the 3D view
+        self.highlighter = ReferenceHighlighter(self.form.references)
+
         # always live point picking while the panel is open
         self.start_point_picking()
 
     def accept(self):
         App.ActiveDocument.commitTransaction()
         self.stop_picking()
+        self.stop_highlight()
         Gui.Control.closeDialog()
 
     def reject(self):
         App.ActiveDocument.abortTransaction()
         self.stop_picking()
+        self.stop_highlight()
         Gui.Control.closeDialog()
 
     def create_dimension(self):
         App.ActiveDocument.commitTransaction()
         self.stop_picking()
+        self.stop_highlight()
         Gui.Control.closeDialog()
         Gui.Selection.clearSelection()
         taskpanel = DimensionTaskPanel()
         QtCore.QTimer.singleShot(0, lambda: Gui.Control.showDialog(taskpanel))
-                        
+
+    def stop_highlight(self) -> None:
+        """Detach the reference hover highlight if any."""
+        if self.highlighter:
+            self.highlighter.finalize()
+            self.highlighter = None
+
     def update_widget(self):
         # set mode
         idx = self.form.modes.findData(self.fpo.Mode)
@@ -402,6 +416,8 @@ class DimensionTaskPanel:
             return        
         for item in listItems:
             self.form.references.takeItem(self.form.references.row(item))
+        if self.highlighter:
+            self.highlighter.clear()
         self.refresh_dimension_fpo()
 
     def refresh_dimension_fpo(self):

@@ -5,6 +5,7 @@ Dimension Feature Python Object
 """
 
 from __future__ import annotations
+from .. import utils
 from ..resources import Resources
 import math
 import re
@@ -1053,11 +1054,13 @@ class DimensionFPO:
         Processes ReferencePointsList and ReferenceShapesList to collect all
         vertices, edges, and faces, returning reference objects with counters.
         
-        Sub-shapes are resolved in global coordinates: when a referenced
-        object lives inside a container with a placement (e.g. App::Part, or
-        nested App::Part containers), the ancestor placement chain is applied
-        via getGlobalPlacement() so the dimension is built at the geometry's
-        actual position in the document.
+        Sub-shapes are resolved in global coordinates via
+        utils.resolve_sub_shape: when a referenced object lives inside a
+        container with a placement (e.g. App::Part, or nested App::Part
+        containers), the ancestor placement chain is applied via
+        getGlobalPlacement() so the dimension is built at the geometry's
+        actual position in the document. This is the same resolution used
+        for the hover highlight of the task panel references list.
 
         Args:
             fpo: Feature Python Object, the freecad dimension object
@@ -1076,56 +1079,19 @@ class DimensionFPO:
         shape_counter = 0
         for ref in fpo.ReferenceShapesList:
             obj, sub_names = ref[0], ref[1]
-            if 'PartDesign' in obj.TypeId:
-                if obj.TypeId == 'PartDesign::Body':
-                    body = obj
-                else:
-                    body = obj.getParent()
-                body_to_global = None
-                if hasattr(body, "getGlobalPlacement") and body.getGlobalPlacement() != body.Placement:
-                    body_to_global = body.getGlobalPlacement().Matrix
-                for sub_name in sub_names:
-                    if body_to_global is not None:
-                        sub_shape = Part.getShape(
-                            body,
-                            obj.Name + '.' + sub_name,
-                            needSubElement=True,
-                            mat=body_to_global,
-                            transform=False,
-                        )
-                    else:
-                        sub_shape = Part.getShape(body, obj.Name + '.' + sub_name, needSubElement=True)
-                    if sub_shape is None:
-                        continue
-                    if sub_shape.ShapeType == 'Face':
-                        face_counter += 1
-                        references.append(sub_shape)
-                    elif sub_shape.ShapeType == 'Edge':
-                        edge_counter += 1
-                        references.append(sub_shape)
-                    elif sub_shape.ShapeType == 'Vertex':
-                        vector_counter += 1
-                        references.append(sub_shape.Point)
-            else:
-                obj_to_global = None
-                if hasattr(obj, "getGlobalPlacement") and obj.getGlobalPlacement() != obj.Placement:
-                    obj_to_global = obj.getGlobalPlacement().multiply(obj.Placement.inverse()).Matrix
-                for sub_name in sub_names:
-                    if obj_to_global is not None:
-                        sub_shape = obj.getSubObject(sub_name, matrix=obj_to_global)
-                    else:
-                        sub_shape = obj.getSubObject(sub_name)
-                    if sub_shape is None:
-                        continue
-                    if sub_shape.ShapeType == 'Face':
-                        face_counter += 1
-                        references.append(sub_shape)
-                    elif sub_shape.ShapeType == 'Edge':
-                        edge_counter += 1
-                        references.append(sub_shape)
-                    elif sub_shape.ShapeType == 'Vertex':
-                        vector_counter += 1
-                        references.append(sub_shape.Point)
+            for sub_name in sub_names:
+                sub_shape = utils.resolve_sub_shape(obj, sub_name)
+                if sub_shape is None:
+                    continue
+                if sub_shape.ShapeType == 'Face':
+                    face_counter += 1
+                    references.append(sub_shape)
+                elif sub_shape.ShapeType == 'Edge':
+                    edge_counter += 1
+                    references.append(sub_shape)
+                elif sub_shape.ShapeType == 'Vertex':
+                    vector_counter += 1
+                    references.append(sub_shape.Point)
         return {
             "references":references,
             "vector_counter":vector_counter,
@@ -1249,7 +1215,7 @@ class DimensionFPO:
         if main_dir:
             return main_dir
         else:
-            App.Console.PrintWarning("Utils:    get_main_direction return an arbritary X direction.\n")
+            App.Console.PrintWarning("Utils:    get_main_direction return an arbitrary X direction.\n")
             return "X"
 
     @classmethod
