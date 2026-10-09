@@ -138,23 +138,28 @@ class DimensionFPO:
             fpo.Placement = App.Placement()
             return
         
-        # get the length depending the mode and inverse point to follow orientation
+        # get the length depending on the mode. The base placement is the
+        # first picked point, but the drawing follows the canonical axis
+        # direction: when the second point stands opposite to it (inverse
+        # pick order), the shape is mirrored along the axis while the text
+        # keeps its reading orientation (see mirror_axis below).
         vec = p2.sub(p1)
+        mirror_axis = False
         if fpo.Mode == "X":
             vec_prime = V(vec).projectToPlane(V(0,0,0), V(0,1,0))
             vec_proj = vec_prime.projectToPlane(V(0,0,0), V(0,0,1))
-            if [p1.x, p2.x].index(min(p1.x, p2.x)) == 1:
-                p1,p2 = V(p2),V(p1)
+            if vec_proj.x < 0.0:
+                mirror_axis = True
         elif fpo.Mode == "Y":
             vec_prime = V(vec).projectToPlane(V(0,0,0), V(1,0,0))
             vec_proj = vec_prime.projectToPlane(V(0,0,0), V(0,0,1))
-            if [p1.y, p2.y].index(max(p1.y, p2.y)) == 1:
-                p1,p2 = V(p2),V(p1)
+            if vec_proj.y > 0.0:
+                mirror_axis = True
         elif fpo.Mode == "Z":
             vec_prime = V(vec).projectToPlane(V(0,0,0), V(1,0,0))
             vec_proj = vec_prime.projectToPlane(V(0,0,0), V(0,1,0))
-            if [p1.z, p2.z].index(min(p1.z, p2.z)) == 1:
-                p1,p2 = V(p2),V(p1)
+            if vec_proj.z < 0.0:
+                mirror_axis = True
         else:
             App.Console.PrintWarning("Dimension[Length]:    mode '{}' not handled.\n".format(fpo.Mode))
             fpo.Shape = Part.Shape()
@@ -314,7 +319,21 @@ class DimensionFPO:
             ext_line2 = Part.makeLine(pe1, pe2)
             ext_line1 = Part.makeLine(pc1, pc2)
         
-        # make dimension shape compound
+        # respect pick order: when the second point lies opposite the
+        # canonical axis direction, mirror the drawing along the axis so
+        # the dimension extends from the first picked point, and reposition
+        # the text without changing its reading orientation.
+        if mirror_axis:
+            left_arrow = left_arrow.mirror(V(), V(1, 0, 0))
+            right_arrow = right_arrow.mirror(V(), V(1, 0, 0))
+            line1 = line1.mirror(V(), V(1, 0, 0))
+            line2 = line2.mirror(V(), V(1, 0, 0))
+            ext_line1 = ext_line1.mirror(V(), V(1, 0, 0))
+            ext_line2 = ext_line2.mirror(V(), V(1, 0, 0))
+            tbb = dim_text_shape.BoundBox
+            dim_text_shape.translate(V(-tbb.XMin - tbb.XMax, 0, 0))
+
+        # make dimension shape compound
         dim_shape = Part.makeCompound(
             [left_arrow,
             line1,
@@ -364,21 +383,32 @@ class DimensionFPO:
             fpo.Placement = App.Placement()
             fpo.recompute()
             return
-        main_dir = self.get_main_direction(og_p2.sub(og_p1))
-        if (main_dir == "X" and og_p1.x > og_p2.x) or \
-        (main_dir == "Y" and og_p1.y < og_p2.y) or \
-        (main_dir == "Z" and og_p1.z > og_p2.z):
-            p1 = V(og_p2)
-            p2 = V(og_p1)
-        else:
-            p1 = V(og_p1)
-            p2 = V(og_p2)
+        # keep the first picked point as the dimension base. The placement
+        # frame stays on the canonical axis direction (vec_canonical) and,
+        # when the second point stands opposite to it (inverse pick order),
+        # the drawing is mirrored along the axis while the text keeps its
+        # reading orientation (see mirror_axis below).
+        p1 = V(og_p1)
+        p2 = V(og_p2)
         vec = p2.sub(p1)
+        main_dir = self.get_main_direction(V(vec))
+        mirror_axis = False
+        vec_canonical = V(vec)
+        if main_dir == "X" and vec.x < 0.0:
+            vec_canonical.multiply(-1.0)
+            mirror_axis = True
+        elif main_dir == "Y" and vec.y > 0.0:
+            vec_canonical.multiply(-1.0)
+            mirror_axis = True
+        elif main_dir == "Z" and vec.z < 0.0:
+            vec_canonical.multiply(-1.0)
+            mirror_axis = True
         length = vec.Length
-        # Make the dim text
+        # Make the dim text (tilt follows the canonical direction so the
+        # text reading orientation is kept whatever the pick order)
         txt = self.make_dim_text_shape(fpo, length)
-        vec_prime = V(vec).projectToPlane(V(0,0,0),V(0,0,1))
-        angle = math.degrees(vec.getAngle(vec_prime))
+        vec_prime = V(vec_canonical).projectToPlane(V(0,0,0),V(0,0,1))
+        angle = math.degrees(vec_canonical.getAngle(vec_prime))
         if math.isnan(angle):
             angle = 90.0
         if fpo.Sector == 1:
@@ -427,7 +457,8 @@ class DimensionFPO:
                 V(length, y_base, 0),
                 V(length, fpo.Offset.Value - fpo.ArrowSize.Value/2, 0))
 
-        # get placement
+        # get placement: the base is the first picked point and the frame
+        # keeps the canonical axis direction
         pl = App.Placement()
         pl.Base = p1
         vz = V(0, 0, 1)
@@ -438,12 +469,26 @@ class DimensionFPO:
         elif fpo.Projection == "Z":
             vz = V(0, 0, 1)
         pl.Rotation = App.Rotation(
-            vec,
+            vec_canonical,
             V(0,1,0),
             vz,
             'XZY'
         )
-        
+
+        # respect pick order: when the second point lies opposite the
+        # canonical direction, mirror the drawing along the axis so the
+        # dimension extends from the first picked point, and reposition
+        # the text without changing its reading orientation.
+        if mirror_axis:
+            left_arrow = left_arrow.mirror(V(), V(1, 0, 0))
+            right_arrow = right_arrow.mirror(V(), V(1, 0, 0))
+            line1 = line1.mirror(V(), V(1, 0, 0))
+            line2 = line2.mirror(V(), V(1, 0, 0))
+            ext_line1 = ext_line1.mirror(V(), V(1, 0, 0))
+            ext_line2 = ext_line2.mirror(V(), V(1, 0, 0))
+            tbb = txt.BoundBox
+            txt.translate(V(-tbb.XMin - tbb.XMax, 0, 0))
+
         dim_shape = Part.makeCompound(
             [left_arrow,
             txt,
@@ -793,18 +838,10 @@ class DimensionFPO:
         references_data = self.get_references_data(fpo)
         references = references_data['references']
         if fpo.Mode == "ChainX":
-            c = 0
-            x = 0
-            mini = 0
+            # the first picked reference is the chain origin
             for ref in references:
                 ref.projectToPlane(references[0], V(0, 1, 0))
                 ref.projectToPlane(references[0], V(0, 0, 1))
-                if ref.x <= x:
-                    mini = c
-                    x = ref.x
-                c += 1
-            mini = references.pop(mini)
-            references.insert(0, mini)
             distances = [0.0]
             for ref in references[1:]:
                 distances.append(ref.sub(references[0]).Length)
@@ -825,18 +862,10 @@ class DimensionFPO:
             fpo.Placement = App.Placement()
             fpo.recompute()
         elif fpo.Mode == "ChainY":
-            c = 0
-            x = 0
-            mini = 0
+            # the first picked reference is the chain origin
             for ref in references:
                 ref.projectToPlane(references[0], V(1, 0, 0))
                 ref.projectToPlane(references[0], V(0, 0, 1))
-                if ref.y <= x:
-                    mini = c
-                    x = ref.y
-                c += 1
-            mini = references.pop(mini)
-            references.insert(0, mini)
             distances = [0.0]
             for ref in references[1:]:
                 distances.append(ref.sub(references[0]).Length)
@@ -855,18 +884,10 @@ class DimensionFPO:
             fpo.Placement = App.Placement()
             fpo.recompute()
         elif fpo.Mode == "ChainZ":
-            c = 0
-            x = 0
-            maxi = 0
+            # the first picked reference is the chain origin
             for ref in references:
                 ref.projectToPlane(references[0], V(1, 0, 0))
                 ref.projectToPlane(references[0], V(0, 1, 0))
-                if ref.z >= x:
-                    maxi = c
-                    x = ref.z
-                c += 1
-            maxi = references.pop(maxi)
-            references.insert(0, maxi)
             distances = [0.0]
             for ref in references[1:]:
                 distances.append(ref.sub(references[0]).Length)
