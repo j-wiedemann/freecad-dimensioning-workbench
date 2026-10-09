@@ -176,19 +176,19 @@ class DimensionFPO:
             angle = 90.0
             dim_text_shape.translate(V(
                 length/2 - bb.XLength/2,
-                fpo.TextOffset.Value - bb.YLength/2,
+                fpo.TextOffset.Value - bb.Center.y,
                 0))
         elif fpo.Mode == "Y" and fpo.Projection == "Z":
             angle = -90.0
             dim_text_shape.translate(V(
                 length/2 - bb.XLength/2,
-                -fpo.TextOffset.Value - bb.YLength/2,
+                -fpo.TextOffset.Value - bb.Center.y,
                 0))
         else:
             angle = 0.0
             dim_text_shape.translate(V(
                 length/2 - bb.XLength/2 + fpo.TextOffset.Value,
-                -bb.YLength/2,
+                -bb.Center.y,
                 0))
         dim_text_shape.rotate(V(length/2, 0, 0), V(0, 0, 1), angle*-1)
         bb = dim_text_shape.BoundBox
@@ -420,7 +420,7 @@ class DimensionFPO:
             angle = 180+angle
         txt.translate(
             V(length/2-txt.BoundBox.XLength/2-fpo.TextOffset.Value,
-              -txt.BoundBox.YLength/2+fpo.Offset.Value,
+              -txt.BoundBox.Center.y+fpo.Offset.Value,
                0))
         txt.rotate(txt.BoundBox.Center, V(0,0,1), angle*-1)
         # make arrows
@@ -584,11 +584,11 @@ class DimensionFPO:
         bb = dim_text_shape.BoundBox
         if 90 < fpo.Angle < 270:
             x = l4.Vertexes[1].Point.x - bb.XLength - 10
-            y = l4.Vertexes[1].Point.y - bb.YLength / 2
+            y = l4.Vertexes[1].Point.y - bb.Center.y
             z = 0.0
         else:
             x = l4.Vertexes[1].Point.x
-            y = l4.Vertexes[1].Point.y - bb.YLength / 2
+            y = l4.Vertexes[1].Point.y - bb.Center.y
             z = 0.0
         dim_text_shape.translate(V(x,y,z))
         dim_shape = Part.makeCompound(
@@ -761,12 +761,8 @@ class DimensionFPO:
             arrow.rotate(V(abs(fpo.Offset.Value), 0.0, 0.0), V(0.0, 0.0, 1.0), 180.0)
             arrow2.rotate(arrow2.Vertexes[0].Point, V(0.0, 0.0, 1.0), 180.0)
         dim_text_shape = self.make_dim_text_shape(fpo, angle, unit='°')
-        bb_x_length = dim_text_shape.BoundBox.XLength
-        bb_y_length = dim_text_shape.BoundBox.YLength
         arc_p = Part.makeCircle(abs(fpo.Offset.Value)+abs(fpo.TextOffset.Value), V(0,0,0), V(0,0,1), 0.0, angle)
         arc_mid_point = arc_p.valueAt(arc_p.Curve.parameterAtDistance(arc_p.Length/2, arc_p.FirstParameter))
-        dim_text_cog = V(arc_mid_point.x-bb_x_length/2, arc_mid_point.y-bb_y_length/2, 0.0)
-        dim_text_shape.translate(dim_text_cog)
 
         if main_dir == "X":
             angle_prime = math.degrees(vec_for_pl.getAngle(V(0, -1, 0)))
@@ -787,6 +783,14 @@ class DimensionFPO:
         elif main_dir == "Z":
             angle_prime = math.degrees(vec_for_pl.getAngle(V(1, 0, 0)))
             dim_text_shape.rotate(dim_text_shape.BoundBox.Center, V(0, 0, 1), angle_prime)
+
+        # The text is oriented before being positioned: rotating a placed
+        # multiline block about its bounding box center shifts the box off
+        # the arc bisector, so the rotated block is centered on the
+        # bisector point using its final bounding box.
+        dim_text_cog = arc_mid_point.sub(dim_text_shape.BoundBox.Center)
+        dim_text_cog.z = 0.0
+        dim_text_shape.translate(dim_text_cog)
 
         bb_txt = dim_text_shape.BoundBox
         bb_txt.enlarge(2)
@@ -854,7 +858,7 @@ class DimensionFPO:
                 txt = self.make_dim_text_shape(fpo, distances[c])
                 txt.rotate(V(0, 0, 0), V(0, 0, 1), 90)
                 txt.rotate(V(0, 0, 0), V(1, 0, 0), 90)
-                txt.translate(line.Vertexes[1].Point.add(V(-txt.BoundBox.XMin/2, 0, txt.BoundBox.ZMin)))
+                txt.translate(line.Vertexes[1].Point.add(V(-txt.BoundBox.Center.x, 0, txt.BoundBox.ZMin)))
                 comp.append(txt)
                 c += 1
 
@@ -899,7 +903,7 @@ class DimensionFPO:
                 comp.append(line)
                 txt = self.make_dim_text_shape(fpo, distances[c])
                 txt.rotate(V(0, 0, 0), V(1, 0, 0), 90)
-                txt.translate(line.Vertexes[1].Point.add(V(-txt.BoundBox.XLength-5, 0, -txt.BoundBox.ZLength/2)))
+                txt.translate(line.Vertexes[1].Point.add(V(-txt.BoundBox.XLength-5, 0, -txt.BoundBox.Center.z)))
                 comp.append(txt)
                 c += 1
             shape = Part.makeCompound(comp)
@@ -1130,8 +1134,9 @@ class DimensionFPO:
     def make_wire_string_shape(self, fpo, string):
         """Render a single text line as a Part compound shape.
 
-        Returns None for an empty string so blank lines still advance
-        the line stack in make_dim_text_shape.
+        Returns None for an empty string or a string without drawable
+        glyphs (e.g. whitespace only) so blank lines still advance the
+        line stack in make_dim_text_shape.
         """
         if not string:
             return None
@@ -1150,6 +1155,8 @@ class DimensionFPO:
                 pile.extend(element[::-1])
             else:
                 dim_text_wires.append(element)
+        if not dim_text_wires:
+            return None
         return Part.makeCompound([s.removeShape(s.Edges[-1]) for s in dim_text_wires])
 
     def make_dim_text_lines(self, fpo, value, prefix=None, suffix=None, unit=None, tol_sup=None, tol_inf=None):
@@ -1179,21 +1186,33 @@ class DimensionFPO:
         return text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 
     def make_dim_text_shape(self, fpo, value, prefix=None, suffix=None, unit=None, tol_sup=None, tol_inf=None):
-        line_height = fpo.TextSize.Value * 1.5
+        """Render the dimension text and stack its lines into one shape.
+
+        The rendered line height depends on the font: some fonts (e.g.
+        ReliefSingleLineCAD) draw glyphs much taller than the requested
+        TextSize, so a fixed TextSize based line spacing makes multiline
+        texts overlap. The line pitch is therefore derived from the lines
+        bounding boxes: it covers the tallest and the lowest glyphs of
+        all the lines plus a gap, which keeps the spacing even and
+        guarantees two adjacent lines never intersect.
+        """
         lines = self.make_dim_text_lines(fpo, value, prefix=prefix, suffix=suffix, unit=unit, tol_sup=tol_sup, tol_inf=tol_inf)
-        shapes = []
+        shapes = [self.make_wire_string_shape(fpo, line) for line in lines]
+        boxes = [shape.BoundBox for shape in shapes if shape is not None]
+        if not boxes:
+            return Part.Shape()
+        line_span = max(box.YMax for box in boxes) - min(box.YMin for box in boxes)
+        line_height = max(line_span * 1.3, fpo.TextSize.Value * 1.5)
+        stacked_shapes = []
         offset = 0.0
-        for line in lines:
-            shape = self.make_wire_string_shape(fpo, line)
+        for shape in shapes:
             if shape is not None:
                 shape.translate(V(0, offset, 0))
-                shapes.append(shape)
+                stacked_shapes.append(shape)
             offset -= line_height
-        if not shapes:
-            return Part.Shape()
-        if len(shapes) == 1:
-            return shapes[0]
-        return Part.makeCompound(shapes)
+        if len(stacked_shapes) == 1:
+            return stacked_shapes[0]
+        return Part.makeCompound(stacked_shapes)
     
     def get_main_direction(self, obj:App.Vector|Part.Edge) -> str:
         if isinstance(obj, Part.Edge):
