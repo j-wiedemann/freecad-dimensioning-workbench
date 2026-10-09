@@ -84,9 +84,23 @@
        </property>
       </widget>
      </item>
-     <item row="5" column="1">
-      <widget class="Gui::InputField" name="text_offset"/>
-     </item>
+      <item row="5" column="1">
+       <widget class="Gui::InputField" name="text_offset"/>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_15">
+        <property name="text">
+         <string>Vertical Text Offset</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="Gui::InputField" name="vertical_text_offset">
+        <property name="toolTip">
+         <string>Vertical offset of the text from the dimension line. When the text does not overlap the line anymore, the line is drawn continuous.</string>
+        </property>
+       </widget>
+      </item>
      <item row="4" column="0">
       <widget class="QLabel" name="label_6">
        <property name="text">
@@ -148,45 +162,45 @@
      <item row="2" column="1">
       <widget class="Gui::InputField" name="offset"/>
      </item>
-     <item row="6" column="0">
-      <widget class="QLabel" name="label_8">
-       <property name="text">
-        <string>Text Size</string>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0">
-      <widget class="QLabel" name="label_9">
-       <property name="text">
-        <string>Arrow Size</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="1">
-      <widget class="Gui::InputField" name="text_size"/>
-     </item>
-     <item row="7" column="1">
-      <widget class="Gui::InputField" name="arrow_size"/>
-     </item>
-     <item row="8" column="0">
-      <widget class="QLabel" name="label_10">
-       <property name="text">
-        <string>Ext line offset</string>
-       </property>
-      </widget>
-     </item>
-     <item row="8" column="1">
-      <widget class="Gui::InputField" name="ext_line_offset"/>
-     </item>
-     <item row="9" column="0">
-      <widget class="QLabel" name="label_11">
-       <property name="text">
-        <string>Decimals</string>
-       </property>
-      </widget>
-     </item>
-     <item row="9" column="1">
-      <widget class="QSpinBox" name="decimals">
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>Text Size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>Arrow Size</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="Gui::InputField" name="text_size"/>
+      </item>
+      <item row="8" column="1">
+       <widget class="Gui::InputField" name="arrow_size"/>
+      </item>
+      <item row="9" column="0">
+       <widget class="QLabel" name="label_10">
+        <property name="text">
+         <string>Ext line offset</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="1">
+       <widget class="Gui::InputField" name="ext_line_offset"/>
+      </item>
+      <item row="10" column="0">
+       <widget class="QLabel" name="label_11">
+        <property name="text">
+         <string>Decimals</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="1">
+       <widget class="QSpinBox" name="decimals">
        <property name="toolTip">
         <string>Number of decimals shown in the dimension value (0 = integer).</string>
        </property>
@@ -201,42 +215,42 @@
        </property>
       </widget>
      </item>
-     <item row="10" column="0">
-      <widget class="QLabel" name="label_12">
-       <property name="text">
-        <string>Prefix</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="1">
-      <widget class="QLineEdit" name="prefix">
-       <property name="toolTip">
-        <string>Text prepended before the automatic symbol and value.</string>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="0">
-      <widget class="QLabel" name="label_13">
-       <property name="text">
-        <string>Suffix</string>
-       </property>
-      </widget>
-     </item>
-     <item row="11" column="1">
-      <widget class="QLineEdit" name="suffix">
-       <property name="toolTip">
-        <string>Text appended after the value.</string>
-       </property>
-      </widget>
-     </item>
-     <item row="12" column="0">
-      <widget class="QLabel" name="label_14">
-       <property name="text">
-        <string>Override</string>
-       </property>
-      </widget>
-     </item>
-     <item row="12" column="1">
+      <item row="11" column="0">
+       <widget class="QLabel" name="label_12">
+        <property name="text">
+         <string>Prefix</string>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="1">
+       <widget class="QLineEdit" name="prefix">
+        <property name="toolTip">
+         <string>Text prepended before the automatic symbol and value.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="0">
+       <widget class="QLabel" name="label_13">
+        <property name="text">
+         <string>Suffix</string>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="1">
+       <widget class="QLineEdit" name="suffix">
+        <property name="toolTip">
+         <string>Text appended after the value.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="13" column="0">
+       <widget class="QLabel" name="label_14">
+        <property name="text">
+         <string>Override</string>
+        </property>
+       </widget>
+      </item>
+      <item row="13" column="1">
       <widget class="QPlainTextEdit" name="override">
        <property name="minimumSize">
         <size>

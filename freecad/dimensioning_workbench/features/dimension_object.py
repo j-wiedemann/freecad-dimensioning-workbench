@@ -68,6 +68,13 @@ class DimensionFPO:
             fpo.Projection = projection_list
         if "TextOffset" not in pl:
             fpo.addProperty("App::PropertyDistance", "TextOffset", "Dimension", "Text position offset.").TextOffset = 0.0
+        if "VerticalTextOffset" not in pl:
+            fpo.addProperty(
+                "App::PropertyDistance",
+                "VerticalTextOffset",
+                "Dimension",
+                "Vertical offset of the text from the dimension line. When the text does not overlap the line anymore, the line is drawn continuous.",
+                ).VerticalTextOffset = 0.0
         if "Sector" not in pl:
             fpo.addProperty("App::PropertyInteger", "Sector", "Dimension", "Angle sector.").Sector = 0
         if "ArrowSize" not in pl:
@@ -175,20 +182,20 @@ class DimensionFPO:
         if fpo.Mode == "Z":
             angle = 90.0
             dim_text_shape.translate(V(
-                length/2 - bb.XLength/2,
+                length/2 - bb.XLength/2 - fpo.VerticalTextOffset.Value,
                 fpo.TextOffset.Value - bb.Center.y,
                 0))
         elif fpo.Mode == "Y" and fpo.Projection == "Z":
             angle = -90.0
             dim_text_shape.translate(V(
-                length/2 - bb.XLength/2,
+                length/2 - bb.XLength/2 + fpo.VerticalTextOffset.Value,
                 -fpo.TextOffset.Value - bb.Center.y,
                 0))
         else:
             angle = 0.0
             dim_text_shape.translate(V(
                 length/2 - bb.XLength/2 + fpo.TextOffset.Value,
-                -bb.Center.y,
+                fpo.VerticalTextOffset.Value - bb.Center.y,
                 0))
         dim_text_shape.rotate(V(length/2, 0, 0), V(0, 0, 1), angle*-1)
         bb = dim_text_shape.BoundBox
@@ -199,23 +206,32 @@ class DimensionFPO:
             left_arrow.rotate(V(0, 0, 0), V(0, 0, 1), 180)
         right_arrow = left_arrow.mirror(V(length/2, 0, 0), V(1, 0, 0))
         
-        # make lines
+        # make lines: the dimension line is interrupted by the text only
+        # while the text overlaps it; once the vertical text offset moves
+        # the text clear of the line, the line is drawn as one continuous
+        # line.
+        text_on_line = (bb.YMin - 2.0) < 0.0 < (bb.YMax + 2.0)
         pl1 = V(left_arrow.BoundBox.XMax, 0, 0)
         if abs(fpo.TextOffset.Value) > length/2:
             pl2 = V(right_arrow.BoundBox.XMin, 0, 0)
-        else:
+        elif text_on_line:
             pl2 = V(bb.XMin - 8, 0, 0)
+        else:
+            pl2 = V(right_arrow.BoundBox.XMin, 0, 0)
         line1 = Part.makeLine(pl1, pl2)
+        line2 = None
         if fpo.TextOffset.Value > length/2:
             pl1 = V(right_arrow.BoundBox.XMax, 0, 0)
             pl2 = V(bb.XMin - 8, 0, 0)
+            line2 = Part.makeLine(pl1, pl2)
         elif fpo.TextOffset.Value < -length/2:
             pl1 = V(bb.XMax + 8, 0, 0)
             pl2 = V(left_arrow.BoundBox.XMin, 0, 0)
-        else:
+            line2 = Part.makeLine(pl1, pl2)
+        elif text_on_line:
             pl1 = V(bb.XMax + 8, 0, 0)
             pl2 = V(length - left_arrow.BoundBox.XLength, 0, 0)
-        line2 = Part.makeLine(pl1, pl2)
+            line2 = Part.makeLine(pl1, pl2)
         
         # make extensions lines
         ext_line_start_length = abs(fpo.Offset.Value)
@@ -328,7 +344,8 @@ class DimensionFPO:
             left_arrow = left_arrow.mirror(V(), V(1, 0, 0))
             right_arrow = right_arrow.mirror(V(), V(1, 0, 0))
             line1 = line1.mirror(V(), V(1, 0, 0))
-            line2 = line2.mirror(V(), V(1, 0, 0))
+            if line2 is not None:
+                line2 = line2.mirror(V(), V(1, 0, 0))
             ext_line1 = ext_line1.mirror(V(), V(1, 0, 0))
             ext_line2 = ext_line2.mirror(V(), V(1, 0, 0))
             tbb = dim_text_shape.BoundBox
@@ -336,14 +353,16 @@ class DimensionFPO:
 
         # make dimension shape compound
         dim_shape = Part.makeCompound(
-            [left_arrow,
-            line1,
-            dim_text_shape,
-            line2,
-            right_arrow,
-            ext_line1,
-            ext_line2
-            ])
+            [part for part in [
+                left_arrow,
+                line1,
+                dim_text_shape,
+                line2,
+                right_arrow,
+                ext_line1,
+                ext_line2,
+            ] if part is not None]
+            )
 
         pl = App.Placement()
         pl.Base = pl.multVec(p1.add(V(0, ext_line_start_length * sign, 0)))
@@ -420,20 +439,30 @@ class DimensionFPO:
             angle = 180+angle
         txt.translate(
             V(length/2-txt.BoundBox.XLength/2-fpo.TextOffset.Value,
-              -txt.BoundBox.Center.y+fpo.Offset.Value,
+              fpo.VerticalTextOffset.Value-txt.BoundBox.Center.y+fpo.Offset.Value,
                0))
         txt.rotate(txt.BoundBox.Center, V(0,0,1), angle*-1)
         # make arrows
         left_arrow = self.make_arrow_shape(fpo)
         left_arrow.translate(V(0, fpo.Offset.Value, 0))
         right_arrow = left_arrow.mirror(V(length/2,0,0),V(1,0,0))
-        # make lines
-        pl1 = V(left_arrow.BoundBox.XLength, fpo.Offset.Value, 0)
-        pl2 = V(txt.BoundBox.XMin - 8, fpo.Offset.Value, 0)
-        line1 = Part.makeLine(pl1, pl2)
-        pl1 = V(txt.BoundBox.XMax + 8, fpo.Offset.Value, 0)
-        pl2 = V(length - left_arrow.BoundBox.XLength, fpo.Offset.Value, 0)
-        line2 = Part.makeLine(pl1, pl2)
+        # make lines: the dimension line is interrupted by the text only
+        # while the text overlaps it; once the vertical text offset moves
+        # the text clear of the line, the line is drawn as one continuous
+        # line.
+        text_on_line = (txt.BoundBox.YMin - 2.0) < fpo.Offset.Value < (txt.BoundBox.YMax + 2.0)
+        line2 = None
+        if text_on_line:
+            pl1 = V(left_arrow.BoundBox.XLength, fpo.Offset.Value, 0)
+            pl2 = V(txt.BoundBox.XMin - 8, fpo.Offset.Value, 0)
+            line1 = Part.makeLine(pl1, pl2)
+            pl1 = V(txt.BoundBox.XMax + 8, fpo.Offset.Value, 0)
+            pl2 = V(length - left_arrow.BoundBox.XLength, fpo.Offset.Value, 0)
+            line2 = Part.makeLine(pl1, pl2)
+        else:
+            pl1 = V(left_arrow.BoundBox.XLength, fpo.Offset.Value, 0)
+            pl2 = V(length - left_arrow.BoundBox.XLength, fpo.Offset.Value, 0)
+            line1 = Part.makeLine(pl1, pl2)
         # make extensions line
         if fpo.Offset.Value >= 0:
             if abs(fpo.Offset.Value) > fpo.ExtLineOffset.Value :
@@ -484,21 +513,24 @@ class DimensionFPO:
             left_arrow = left_arrow.mirror(V(), V(1, 0, 0))
             right_arrow = right_arrow.mirror(V(), V(1, 0, 0))
             line1 = line1.mirror(V(), V(1, 0, 0))
-            line2 = line2.mirror(V(), V(1, 0, 0))
+            if line2 is not None:
+                line2 = line2.mirror(V(), V(1, 0, 0))
             ext_line1 = ext_line1.mirror(V(), V(1, 0, 0))
             ext_line2 = ext_line2.mirror(V(), V(1, 0, 0))
             tbb = txt.BoundBox
             txt.translate(V(-tbb.XMin - tbb.XMax, 0, 0))
 
         dim_shape = Part.makeCompound(
-            [left_arrow,
-            txt,
-            right_arrow,
-            line1,
-            line2,
-            ext_line1,
-            ext_line2
-            ])
+            [part for part in [
+                left_arrow,
+                txt,
+                right_arrow,
+                line1,
+                line2,
+                ext_line1,
+                ext_line2,
+            ] if part is not None]
+            )
         fpo.Shape = dim_shape
         fpo.Placement = pl
         fpo.recompute()
@@ -584,11 +616,11 @@ class DimensionFPO:
         bb = dim_text_shape.BoundBox
         if 90 < fpo.Angle < 270:
             x = l4.Vertexes[1].Point.x - bb.XLength - 10
-            y = l4.Vertexes[1].Point.y - bb.Center.y
+            y = l4.Vertexes[1].Point.y - bb.Center.y + fpo.VerticalTextOffset.Value
             z = 0.0
         else:
             x = l4.Vertexes[1].Point.x
-            y = l4.Vertexes[1].Point.y - bb.Center.y
+            y = l4.Vertexes[1].Point.y - bb.Center.y + fpo.VerticalTextOffset.Value
             z = 0.0
         dim_text_shape.translate(V(x,y,z))
         dim_shape = Part.makeCompound(
@@ -787,8 +819,14 @@ class DimensionFPO:
         # The text is oriented before being positioned: rotating a placed
         # multiline block about its bounding box center shifts the box off
         # the arc bisector, so the rotated block is centered on the
-        # bisector point using its final bounding box.
-        dim_text_cog = arc_mid_point.sub(dim_text_shape.BoundBox.Center)
+        # bisector point using its final bounding box. The vertical text
+        # offset moves the block radially, off the dimension arc.
+        dim_text_target = arc_mid_point
+        arc_text_radius = abs(fpo.Offset.Value) + abs(fpo.TextOffset.Value)
+        if fpo.VerticalTextOffset.Value != 0.0 and arc_text_radius > 1e-7:
+            scale = (arc_text_radius + fpo.VerticalTextOffset.Value) / arc_text_radius
+            dim_text_target = V(arc_mid_point.x * scale, arc_mid_point.y * scale, 0.0)
+        dim_text_cog = dim_text_target.sub(dim_text_shape.BoundBox.Center)
         dim_text_cog.z = 0.0
         dim_text_shape.translate(dim_text_cog)
 
@@ -1032,6 +1070,12 @@ class DimensionFPO:
         arc_symbol.translate(V(0,0,0).sub(bb.Center))
         dim_shape = Part.makeCompound([arc_symbol, txt])
         dim_shape.Placement.Base = midpoint
+        # the vertical text offset moves the block radially, off the arc
+        if fpo.VerticalTextOffset.Value != 0.0:
+            radial = midpoint.sub(center)
+            if radial.Length > 1e-7:
+                radial.normalize()
+                dim_shape.Placement.Base = midpoint.add(radial.multiply(fpo.VerticalTextOffset.Value))
         dim_shape.Placement.Rotation = App.Rotation(
             vx,
             V(0,1,0),
@@ -1039,14 +1083,24 @@ class DimensionFPO:
             'XZY'
         )
 
-        # make portion arcs
+        # make portion arcs: they shorten to leave room for the text only
+        # while the text overlaps the arc; once the vertical text offset
+        # moves the text clear of it, the arc is drawn as one continuous
+        # arc between the arrows.
         _circle = Part.makeCircle(dim_shape.BoundBox.DiagonalLength/2, dim_shape.BoundBox.Center, vz)
         _intersection = DraftGeomUtils.findIntersection(circle, _circle)
-        arc_start_pt2 = _intersection[DraftGeomUtils.findClosest(startpoint, _intersection)]
-        arc_end_pt2 = _intersection[DraftGeomUtils.findClosest(endpoint, _intersection)]
-        arc_start = DraftGeomUtils.arcFrom2Pts(arc_start_pt1, arc_start_pt2, center)
-        arc_end = DraftGeomUtils.arcFrom2Pts(arc_end_pt1, arc_end_pt2, center)
-        shape = Part.makeCompound([arrow, arrow2, dim_shape, ext_line1, ext_line2, arc_start, arc_end])
+        arc_end = None
+        if _intersection:
+            arc_start_pt2 = _intersection[DraftGeomUtils.findClosest(startpoint, _intersection)]
+            arc_end_pt2 = _intersection[DraftGeomUtils.findClosest(endpoint, _intersection)]
+            arc_start = DraftGeomUtils.arcFrom2Pts(arc_start_pt1, arc_start_pt2, center)
+            arc_end = DraftGeomUtils.arcFrom2Pts(arc_end_pt1, arc_end_pt2, center)
+        else:
+            arc_start = DraftGeomUtils.arcFrom2Pts(arc_start_pt1, arc_end_pt1, center)
+        shape = Part.makeCompound(
+            [part for part in [arrow, arrow2, dim_shape, ext_line1, ext_line2, arc_start, arc_end]
+             if part is not None]
+            )
         fpo.Shape = shape
         fpo.Placement = App.Placement()
         fpo.recompute()

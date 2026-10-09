@@ -71,6 +71,10 @@ class DimensionTaskPanel:
         self.form.text_offset.setProperty("unit", "mm")
         self.form.text_offset.setProperty("precision", 0)
 
+        # text vertical offset
+        self.form.vertical_text_offset.setProperty("unit", "mm")
+        self.form.vertical_text_offset.setProperty("precision", 0)
+
         # text dimension offset
         self.form.ext_line_offset.setProperty("unit", "mm")
         self.form.ext_line_offset.setProperty("precision", 0)
@@ -194,6 +198,7 @@ class DimensionTaskPanel:
         self.form.sector.currentIndexChanged.connect(self.sector_changed)
         self.form.projections.currentIndexChanged.connect(self.projection_changed)
         self.form.text_offset.valueChanged.connect(self.text_offset_value_changed)
+        self.form.vertical_text_offset.valueChanged.connect(self.vertical_text_offset_value_changed)
         self.form.ext_line_offset.valueChanged.connect(self.ext_line_offset_value_changed)
         self.form.decimals.valueChanged.connect(self.decimals_value_changed)
         self.form.prefix.textChanged.connect(self.prefix_text_changed)
@@ -248,6 +253,7 @@ class DimensionTaskPanel:
         # set numerical value
         self.form.offset.setProperty("quantityString", self.fpo.Offset.Value)
         self.form.text_offset.setProperty("quantityString", self.fpo.TextOffset.Value)
+        self.form.vertical_text_offset.setProperty("quantityString", self.fpo.VerticalTextOffset.Value)
         self.form.angle.setProperty("quantityString", self.fpo.Angle.Value)
         self.form.sector.setCurrentIndex(self.fpo.Sector)
         self.form.arrow_size.setProperty("quantityString", self.fpo.ArrowSize.Value)
@@ -306,6 +312,10 @@ class DimensionTaskPanel:
 
     def text_offset_value_changed(self, input):
         self.fpo.TextOffset = input
+        self.refresh_dimension_fpo()
+
+    def vertical_text_offset_value_changed(self, input):
+        self.fpo.VerticalTextOffset = input
         self.refresh_dimension_fpo()
 
     def decimals_value_changed(self, value):
